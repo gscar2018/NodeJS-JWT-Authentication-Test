@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js" integrity="sha512-DdX/YwF5e41Ok+AI81HI8f5/5UsoxCVT9GKYZRIzpLxb8Twz4ZwPPX+jQMwMhNQ9b5+zDEefc+dcvQoPWGNZ3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<div class="container-fluid">
+        <h1 class="row">Login</h1>
+
+  <main>
+    <div class="row">
+        <label for="username">Username</label>
+        <input type="text"  name="username"  id="username">
+    </div>
+    <div class="row">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password">
+    </div>
+    <div>
+        <button onclick="login()">Login</button>
+        <button onclick="getDashboard()">Dashboard</button>
+        <button onclick="goToSettings()">Settings</button>
+    </div>
+  </main>
+</div>
+
+  <script>
+
+    function login() {
+        const data = {
+         username: document.getElementById('username').value,
+         password: document.getElementById('password').value,
+    };
+    axios.post('/api/login', data)
+        .then(res => {
+            console.log(res);
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            if(res && res.data && res.data.success){
+                const token = res.data.token;
+                localStorage.setItem('jwt', token);
+                getDashboard();
+            }
+        })
+        .catch(err => {
+            if (err.response && err.response.data && err.response.data.error === 'TokenExpiredError') {
+                window.location.href = '/';
+            }
+        });
+    }
+
+    function getDashboard() {
+    const token = localStorage.getItem('jwt');
+    axios.get('/api/dashboard', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(res => {
+        if (res && res.data && res.data.success) {
+            document.querySelector('h1.row').innerHTML = 'Dashboard';
+            document.querySelector('main').innerHTML = res.data.myContent;
+            history.pushState(null, null, '/dashboard');
+        }
+    }) .catch(err => {
+        if (err.response && err.response.data && err.response.data.error === 'TokenExpiredError') {
+            window.location.href = '/';
+        }
+    });
+}
+
+
+    function goToSettings() {
+    const token = localStorage.getItem('jwt');
+    axios.get('/api/settings', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(res => {
+        if (res && res.data && res.data.success) {
+            document.querySelector('h1.row').innerHTML = 'Settings';
+            document.querySelector('main').innerHTML = res.data.settings;
+            history.pushState(null, null, '/settings');
+        }
+    }) .catch(err => {
+        if (err.response && err.response.data && err.response.data.error === 'TokenExpiredError') {
+            window.location.href = '/';
+        }
+    });
+}
+
+function onLoad() {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+        getDashboard();
+    }
+}
+onLoad();
+
+    </script>
+</body>
+</html>
